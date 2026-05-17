@@ -12,8 +12,7 @@ from tetris_objects import l_shape, j_shape, t_shape, \
 G_WIDTH = 14
 G_HEIGHT = 31
 
-MAX_LEVEL = 10
-LINES_PER_LEVEL = 5
+FIXED_LEVEL = 10
 LOOP_DELAY = .02
 AUTOPLAY_ENABLED = True
 AI_ACTIONS_PER_SECOND = 4
@@ -50,18 +49,17 @@ class Grid:
     """
 
 
-    def __init__(self, width = G_WIDTH, height = G_HEIGHT, level = 1):
+    def __init__(self, width = G_WIDTH, height = G_HEIGHT):
         """
         Initialization of the gri object.
 
         Args:
             with (int): width of the grid.
             height (int): height of the grid.
-            level (int): starting game level.
         """
         self.game_over = False
         self.score = 0
-        self.level = max(1, min(level, MAX_LEVEL))
+        self.level = FIXED_LEVEL
         self.width = width
         self.height = height
         self.speed = self.drop_interval_for_level()
@@ -150,10 +148,9 @@ class Grid:
 
     def update_level_and_speed(self):
         """
-        Updates level from score. Level increases at scores 5, 10, 15...
-        and is capped at Level 10.
+        Keeps the simulator fixed at Level 10 for AI benchmarking.
         """
-        self.level = min(MAX_LEVEL, self.score // LINES_PER_LEVEL + 1)
+        self.level = FIXED_LEVEL
         self.speed = self.drop_interval_for_level()
 
 

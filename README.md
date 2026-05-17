@@ -15,8 +15,8 @@ A basic Tetris version running in your command line interface. If you would like
 ### Assignment simulator changes
 - Board size changed to 14 x 31 playable cells.
 - Score increases by 1 for each cleared line.
-- Level follows the assignment rule and increases every 5 score, capped at 10.
-- Drop interval follows `0.5 - (level - 1) * 0.05` seconds per row.
+- AI benchmark mode is fixed at Level 10.
+- Drop interval follows the assignment rule, giving 0.05 seconds per row at Level 10.
 - Autoplay AI evaluates all rotation x drop-location choices.
 - AI actions are limited to 4 actions per second.
 - Heuristic evaluation uses line clear, total column height, holes, and optional bumpiness weight.
