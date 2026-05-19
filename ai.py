@@ -2,8 +2,8 @@ import numpy as np
 
 
 HEURISTIC_WEIGHTS = {
-    "aggregateHeight": -1652711,
     "completeLines": +2436776,
+    "aggregateHeight": -1652711,
     "holes": -1707943,
     "bumpiness": -520571,
 }
@@ -15,10 +15,10 @@ class AutoplayAI:
     """
     Autoplay controller using only the classic four-feature Tetris heuristic:
 
-    score = -1652711 * aggregateHeight
-          +  2436776 * completeLines
-          -  1707943 * holes
-          -   520571 * bumpiness
+    score = -5000000 * aggregateHeight
+          +  7500000 * completeLines
+          -  3000000 * holes
+          -  1844830 * bumpiness
     """
 
     def __init__(
@@ -71,8 +71,6 @@ class AutoplayAI:
                     continue
                 if not placement_is_reachable_in_time(
                     grid,
-                    board,
-                    shape,
                     row,
                     col,
                     rotations,
@@ -172,8 +170,6 @@ def find_drop_row(board, shape, col):
 
 def placement_is_reachable_in_time(
     grid,
-    board,
-    shape,
     target_row,
     target_col,
     rotations,
@@ -189,8 +185,6 @@ def placement_is_reachable_in_time(
 
     if target_row < current_row:
         return False
-    if not can_place(board, shape, current_row, target_col):
-        return False
 
     required_actions = movement_action_count(grid, target_col, rotations)
     available_actions = movement_action_capacity_before_lock(
@@ -199,7 +193,8 @@ def placement_is_reachable_in_time(
         movement_actions_per_second,
     )
 
-    return required_actions <= available_actions
+
+    return required_actions < available_actions
 
 
 def movement_action_count(grid, target_col, rotations):

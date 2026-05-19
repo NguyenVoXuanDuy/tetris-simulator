@@ -236,6 +236,7 @@ def save_charts(output_dir, results):
         "Game",
         "Score",
         "#2f80ed",
+        use_game_x_ticks=True,
     ))
     chart_paths.append(plot_line_chart(
         plt,
@@ -246,6 +247,7 @@ def save_charts(output_dir, results):
         "Game",
         "Time (s)",
         "#27ae60",
+        use_game_x_ticks=True,
     ))
     chart_paths.append(plot_line_chart(
         plt,
@@ -256,6 +258,7 @@ def save_charts(output_dir, results):
         "Game",
         "Pieces",
         "#f2994a",
+        use_game_x_ticks=True,
     ))
     chart_paths.append(plot_scatter_chart(
         plt,
@@ -295,17 +298,35 @@ def load_matplotlib():
 
 
 def plot_bar_chart(
-    plt, path, x_values, y_values, title, x_label, y_label, color
+    plt,
+    path,
+    x_values,
+    y_values,
+    title,
+    x_label,
+    y_label,
+    color,
+    use_game_x_ticks=False,
 ):
     fig, ax = plt.subplots(figsize=(10, 5.6))
     ax.bar(x_values, y_values, color=color, alpha=0.85)
     style_axes(ax, title, x_label, y_label)
+    if use_game_x_ticks:
+        style_game_x_ticks(ax, x_values)
     ax.set_ylim(bottom=0)
     return save_figure(fig, path)
 
 
 def plot_line_chart(
-    plt, path, x_values, y_values, title, x_label, y_label, color
+    plt,
+    path,
+    x_values,
+    y_values,
+    title,
+    x_label,
+    y_label,
+    color,
+    use_game_x_ticks=False,
 ):
     fig, ax = plt.subplots(figsize=(10, 5.6))
     ax.plot(
@@ -317,6 +338,8 @@ def plot_line_chart(
         markersize=5,
     )
     style_axes(ax, title, x_label, y_label)
+    if use_game_x_ticks:
+        style_game_x_ticks(ax, x_values)
     ax.set_ylim(bottom=0)
     return save_figure(fig, path)
 
@@ -340,21 +363,25 @@ def plot_summary_dashboard(
 
     axes[0][0].bar(games, scores, color="#2f80ed", alpha=0.85)
     style_axes(axes[0][0], "Score", "Game", "Score")
+    style_game_x_ticks(axes[0][0], games)
 
     axes[0][1].plot(
         games, times, color="#27ae60", linewidth=2.2, marker="o", markersize=4
     )
     style_axes(axes[0][1], "Survival Time", "Game", "Time (s)")
+    style_game_x_ticks(axes[0][1], games)
 
     axes[1][0].plot(
         games, pieces, color="#f2994a", linewidth=2.2, marker="o", markersize=4
     )
     style_axes(axes[1][0], "Pieces Placed", "Game", "Pieces")
+    style_game_x_ticks(axes[1][0], games)
 
     axes[1][1].plot(
         games, actions, color="#eb5757", linewidth=2.2, marker="o", markersize=4
     )
     style_axes(axes[1][1], "AI Actions", "Game", "Actions")
+    style_game_x_ticks(axes[1][1], games)
 
     for row in axes:
         for ax in row:
@@ -371,6 +398,19 @@ def style_axes(ax, title, x_label, y_label):
     ax.grid(True, axis="y", linestyle="--", alpha=0.35)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
+
+
+def style_game_x_ticks(ax, games):
+    if not games:
+        return
+
+    tick_step = 2
+    max_game = max(games)
+    tick_end = max(tick_step, ((max_game + tick_step - 1) // tick_step) * tick_step)
+    right_limit = max(ax.get_xlim()[1], tick_end)
+
+    ax.set_xlim(left=0, right=right_limit)
+    ax.set_xticks(range(0, tick_end + 1, tick_step))
 
 
 def save_figure(fig, path):
