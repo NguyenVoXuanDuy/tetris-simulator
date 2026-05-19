@@ -15,16 +15,16 @@ A basic Tetris version running in the command line interface, extended with AI
 autoplay and benchmarking tools for assignment experiments.
 
 ## Interaction
+
 - h: move left
 - l: move right
 - j: hard drop
 - k: rotate clockwise
 
 ## Assignment simulator changes
+
 - Board size changed to 14 x 31 playable cells.
 - Score increases by 1 for each cleared line.
-- AI benchmark mode is fixed at Level 10.
-- Drop interval follows the assignment rule, giving 0.05 seconds per row at Level 10.
 - Autoplay AI evaluates all rotation x drop-location choices.
 - AI actions are limited to 4 actions per second.
 - Heuristic evaluation uses only aggregate height, completed lines, holes, and
@@ -38,6 +38,7 @@ score = -0.510066 * aggregateHeight
 ```
 
 ## AI benchmark
+
 Run the headless benchmark with:
 
 ```bash
@@ -48,6 +49,7 @@ The benchmark saves raw data plus report-ready PNG/SVG charts in a timestamped
 folder inside `benchmark_results/`.
 
 ## Dependencies
+
 - keyboard
 - curses
 - numpy
