@@ -19,8 +19,28 @@ A basic Tetris version running in your command line interface. If you would like
 - Drop interval follows the assignment rule, giving 0.05 seconds per row at Level 10.
 - Autoplay AI evaluates all rotation x drop-location choices.
 - AI actions are limited to 4 actions per second.
-- Heuristic evaluation uses line clear, total column height, holes, and optional bumpiness weight.
+- Heuristic evaluation uses only aggregate height, completed lines, holes, and
+  bumpiness:
 
-### Dependancies (python packages)
+```text
+score = -0.510066 * aggregateHeight
+      +  0.760666 * completeLines
+      -  0.35663  * holes
+      -  0.184483 * bumpiness
+```
+
+### AI benchmark
+Run the headless benchmark with:
+
+```bash
+python benchmark_ai.py
+```
+
+The benchmark saves raw data plus report-ready PNG/SVG charts in a timestamped
+folder inside `benchmark_results/`.
+
+### Dependencies (python packages)
 - keyboard
 - curses
+- numpy
+- matplotlib

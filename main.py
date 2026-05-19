@@ -10,9 +10,9 @@ from tetris_objects import l_shape, j_shape, t_shape, \
 
 # Assignment playable area: 14 units wide, 31 rows below the top boundary.
 G_WIDTH = 14
-G_HEIGHT = 31
+G_HEIGHT = 30
 
-FIXED_LEVEL = 10
+FIXED_LEVEL = 9
 LOOP_DELAY = .02
 AUTOPLAY_ENABLED = True
 AI_ACTIONS_PER_SECOND = 4
@@ -143,7 +143,7 @@ class Grid:
         Returns the assignment drop interval for the current level.
         Level x drops 1 row per (0.5 - (x - 1) * 0.05) seconds.
         """
-        return 0.5 - (self.level - 1) * 0.05
+        return (0.5 - (self.level - 1) * 0.05)
 
 
     def update_level_and_speed(self):
@@ -166,7 +166,7 @@ class Grid:
         Moves the current shape down by one row if possible.
         """
         if not self.current_shape:
-            return
+            return False
 
         new_position = (
             self.current_shape_location[0] + 1,
@@ -186,8 +186,10 @@ class Grid:
                 self.current_shape_location[0],
                 self.current_shape_location[1],
             )
+            return True
         else:
             self.lock_shape()
+            return False
 
 
     def hard_drop(self):
@@ -229,7 +231,7 @@ class Grid:
                         Use 1 for right, -1 for left.
         """
         if not self.current_shape:
-            return 
+            return False
         new_position = (
             self.current_shape_location[0],
             self.current_shape_location[1] + side 
@@ -247,6 +249,9 @@ class Grid:
                 self.current_shape_location[0],
                 self.current_shape_location[1],
             )
+            return True
+
+        return False
 
 
     def rotate(self):
@@ -254,7 +259,7 @@ class Grid:
         Rotates the current shape clockwise by 90 degrees if enough space.
         """
         if not self.current_shape:
-            return
+            return False
         rotated_shape = np.rot90(self.current_shape, k = -1)
         if self.can_move(rotated_shape, self.current_shape_location):
             self.draw_shape(
@@ -269,6 +274,9 @@ class Grid:
                 self.current_shape_location[0],
                 self.current_shape_location[1],
             )
+            return True
+
+        return False
 
 
     def new_shape(self, shape):
@@ -339,19 +347,24 @@ class Grid:
         self.new_shape(new_shape)
 
 
-    def print(self, stdscr, autoplay_enabled = False):
+    def print(self, stdscr, autoplay_enabled = False, ai_target = None):
         """
         Prints the grid, score and next shape for each iteration.
 
         Args:
             stdscr (curses.window): The window object provided by the curses
                                     library.
+            ai_target (dict): Optional target placement chosen by the AI.
         """
         stdscr.clear()
         for y, row in enumerate(self.grid_list):
             for x, cell in enumerate(row):
                 char = " . " if cell == 0 else " # "
                 stdscr.addstr(y, x * 2, char)  # Doubling x for better spacing
+
+        if autoplay_enabled:
+            self.draw_ai_target(stdscr, ai_target)
+
         # Printing next shape
         for i, shape_row in enumerate(self.next_shape):
             for j, value in enumerate(shape_row):
@@ -365,14 +378,30 @@ class Grid:
         stdscr.addstr(
             self.height - 1, 
             self.width*2 + 2, 
-            f"Score: {self.score}  Level: {self.level}"
+            f"Score: {self.score} | Level: {self.level} "
         )
         stdscr.addstr(
             self.height - 2,
             self.width*2 + 2,
-            f"AI: {'ON' if autoplay_enabled else 'OFF'}"
+            f"AI: {'ON' if autoplay_enabled else 'OFF'} | A/s: {AI_ACTIONS_PER_SECOND}"
         )
         stdscr.refresh()
+
+
+    def draw_ai_target(self, stdscr, ai_target):
+        """
+        Draws the AI's planned landing footprint with ^ markers.
+        """
+        if not ai_target:
+            return
+
+        for row, col in ai_target_cells(ai_target):
+            if not (0 <= row < self.height and 0 <= col < self.width):
+                continue
+            if self.grid_list[row][col] != 0:
+                continue
+
+            stdscr.addstr(row, col * 2, " ^ ")
 
 
     def print_game_over(self, stdscr):
@@ -427,6 +456,8 @@ def main(stdscr):
     grid = Grid(G_WIDTH, G_HEIGHT)
     grid.new_shape(random.choice(SHAPES_LIST))
     ai = AutoplayAI()
+    ai_actions = []
+    last_ai_spawn_count = None
 
     last_k_time = 0
     last_h_time = 0
@@ -442,16 +473,37 @@ def main(stdscr):
 
     while not grid.game_over:
 
-        grid.print(stdscr, AUTOPLAY_ENABLED)
+        if (
+            AUTOPLAY_ENABLED
+            and grid.current_shape
+            and grid.spawn_count != last_ai_spawn_count
+        ):
+            ai_actions = ai.plan_actions(grid)
+            last_ai_spawn_count = grid.spawn_count
+
+        grid.print(stdscr, AUTOPLAY_ENABLED, ai.last_target)
 
         current_time = time.time()
 
         if AUTOPLAY_ENABLED:
-            if current_time - last_ai_action_time >= AI_ACTION_INTERVAL:
-                action = ai.next_action(grid)
-                execute_action(grid, action)
-                if action == "drop":
+            if execute_immediate_hard_drop(grid, ai_actions):
+                last_drop_time = current_time
+            elif current_time - last_ai_action_time >= AI_ACTION_INTERVAL:
+                action = None
+                if ai_actions:
+                    action = ai_actions.pop(0)
+
+                action_succeeded = execute_action(grid, action)
+
+                if execute_immediate_hard_drop(grid, ai_actions):
                     last_drop_time = current_time
+                elif (
+                    action in ("left", "right", "rotate")
+                    and not action_succeeded
+                    and grid.current_shape
+                ):
+                    ai_actions = ai.plan_actions(grid)
+                    last_ai_spawn_count = grid.spawn_count
                 if action:
                     last_ai_action_time = current_time
         else:
@@ -490,13 +542,42 @@ def main(stdscr):
 
 def execute_action(grid, action):
     if action == "left":
-        grid.move_side(side = -1)
+        return grid.move_side(side = -1)
     elif action == "right":
-        grid.move_side(side = 1)
+        return grid.move_side(side = 1)
     elif action == "rotate":
-        grid.rotate()
+        return grid.rotate()
     elif action == "drop":
         grid.hard_drop()
+        return True
+
+    return False
+
+
+def ai_target_cells(ai_target):
+    shape = ai_target.get("shape", [])
+    row_offset = ai_target.get("row", 0)
+    col_offset = ai_target.get("col", 0)
+
+    return [
+        (row + row_offset, col + col_offset)
+        for row, shape_row in enumerate(shape)
+        for col, value in enumerate(shape_row)
+        if value
+    ]
+
+
+def execute_immediate_hard_drop(grid, ai_actions):
+    """
+    Executes a queued hard drop without consuming the configured movement
+    budget. The assignment limit names rotate and left/right movement only.
+    """
+    if ai_actions and ai_actions[0] == "drop":
+        ai_actions.pop(0)
+        execute_action(grid, "drop")
+        return True
+
+    return False
 
 
 if __name__ == "__main__":

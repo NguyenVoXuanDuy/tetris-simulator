@@ -1,7 +1,25 @@
 
 # Ignore Python bytecode cache directories
-__pycache__/
-_pycache_/
+__pycache__/*
+_pycache_/*
+__pycache__/*
+__pycache__
 
 # Ignore compiled Python files
 *.pyc
+
+# Ignore genetic training outputs
+genetic_results/*
+
+benchmark_results/*
+
+ga_results/*
+
+word/*
+
+main.c
+
+generate_ai_summary_doc.py
+
+
+
